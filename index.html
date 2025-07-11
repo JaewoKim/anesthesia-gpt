@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수술 전 위험도 평가 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .search-container {
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .category-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .category-card.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .category-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .category-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .category-desc {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        .subcategory-panel {
+            display: none;
+            background: #f1f3f4;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            animation: slideDown 0.3s ease;
+        }
+
+        .subcategory-panel.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .subcategory-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .subcategory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .risk-item {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .risk-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .risk-item.selected {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .custom-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #667eea;
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .custom-checkbox.checked {
+            background: #28a745;
+            border-color: #28a745;
+        }
+
+        .custom-checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .risk-label {
+            font-weight: 500;
+            flex-grow: 1;
+        }
+
+        .detail-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .detail-input.show {
+            display: block;
+        }
+
+        .risk-summary {
+            background: linear-gradient(135deg, #ff7675, #fd79a8);
+            color: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 40px;
+            text-align: center;
+            display: none;
+        }
+
+        .risk-summary.show {
+            display: block;
+        }
+
+        .risk-level {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #00b894, #00cec9);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #fd79a8, #ff7675);
+        }
+
+        .result-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .result-panel.show {
+            display: block;
+        }
+
+        .consent-text {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 수술 전 위험도 평가 시스템</h1>
+            <p>체계적인 수술 전 위험 요소 평가 및 동의서 생성</p>
+            <button class="btn btn-reset" onclick="resetAll()">🔄 전체 초기화</button>
+        </div>
+
+        <div class="main-content">
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="위험 요소 검색..." onkeyup="searchRisks(this.value)">
+            </div>
+
+            <div class="category-grid">
+                <div class="category-card" onclick="showCategory('cardiovascular', this)">
+                    <span class="category-icon">❤️</span>
+                    <div class="category-title">심장계</div>
+                    <div class="category-desc">심혈관 질환, 부정맥, 고혈압 등</div>
+                </div>
+
+                <div class="category-card" onclick="showCategory('respiratory', this)">
+                    <span class="category-icon">🫁</span>
+                    <div class="category-title">호흡기계</div>
+                    <div class="category-desc">천식, COPD, 결핵, 폐렴 등</div>
+                </div>
+
+                <div class="category-card" onclick="showCategory('endocrine', this)">
+                    <span class="category-icon">🧬</span>
+                    <div class="category-title">내분비계</div>
+                    <div class="category-desc">당뇨병, 갑상선 질환, 부신 질환 등</div>
+                </div>
+
+                <div class="category-card" onclick="showCategory('hepatic', this)">
+                    <span class="category-icon">🫘</span>
+                    <div class="category-title">간장계</div>
+                    <div class="category-desc">간경화, 간염, 간기능 장애 등</div>
+                </div>
+
+                <div class="category-card" onclick="showCategory('renal', this)">
+                    <span class="category-icon">🫘</span>
+                    <div class="category-title">신장계</div>
+                    <div class="category-desc">신부전, 투석, 전해질 불균형 등</div>
+                </div>
+
+                <div class="category-card" onclick="showCategory('neurologic', this)">
+                    <span class="category-icon">🧠</span>
+                    <div class="category-title">신경계</div>
+                    <div class="category-desc">뇌졸중, 중증근무력증, 척추 질환 등</div>
+                </div>
+
+                <div class="category-card" onclick="showCategory('hematologic', this)">
+                    <span class="category-icon">🩸</span>
+                    <div class="category-title">혈액계</div>
+                    <div class="category-desc">빈혈, 응고장애, 출혈 경향 등</div>
+                </div>
+
+                <div class="category-card" onclick="showCategory('infectious', this)">
+                    <span class="category-icon">🦠</span>
+                    <div class="category-title">감염</div>
+                    <div class="category-desc">COVID-19, 발열, 활동성 감염 등</div>
+                </div>
+
+                <div class="category-card" onclick="showCategory('special', this)">
+                    <span class="category-icon">⚠️</span>
+                    <div class="category-title">특수상황</div>
+                    <div class="category-desc">고령, 비만, 임신, 응급수술 등</div>
+                </div>
+            </div>
+
+            <!-- 심장계 -->
+            <div class="subcategory-panel" id="cardiovascular-panel">
+                <div class="subcategory-title">❤️ 심장계 위험 요소</div>
+                <div class="subcategory-grid">
+                    <div class="risk-item" onclick="toggleRisk('valve-disease', this)">
+                        <div class="checkbox-wrapper">
+                            <div class="custom-checkbox"></div>
+                            <span class="risk-label">판막질환</span>
+                        </div>
+                        <select class="detail-input" onclick="event.stopPropagation()">
+                            <option value="">종류 선택</option>
+                            <option value="mitral-stenosis">승모판 협착</option>
+                            <option value="mitral-regurgitation">승모판 역류</option>
+                            <option value="aortic-stenosis">대동맥판 협착</option>
+                            <option value="aortic-regurgitation">대동맥판 역류</option>
+                        </select>
+                    </div>
+
+                    <div class="risk-item" onclick="toggleRisk('coronary-disease', this)">
+                        <div class="checkbox-wrapper">
+                            <div class="custom-checkbox"></div>
+                            <span class="risk-label">관상동맥질환</span>
+                        </div>
+                        <select class="detail-input" onclick="event.stopPropagation()">
+                            <option value="">종류 선택</option>
+                            <option value="stable-angina">안정성 협심증</option>
+                            <option value="unstable-angina">불안정성 협심증</option>
+                            <option value="old-mi">과거 심근경색</option>
+                            <option value="recent-pci">최근 PCI 시행</option>
+                        </select>
+                    </div>
+
+                    <div class="risk-item" onclick="toggleRisk('arrhythmia', this)">
+                        <div class="checkbox-wrapper">
+                            <div class="custom-checkbox"></div>
+                            <span class="risk-label">부정맥</span>
+                        </div>
+                        <select class="detail-input" onclick="event.stopPropagation()">
+                            <option value="">종류 선택</option>
+                            <option value="atrial-fib">심방세동</option>
+                            <option value="vtach">심실빈맥</option>
+                            <option value="bradycardia">서맥</option>
+                            <option value="pacemaker">심박조율기</option>
+                        </select>
+                    </div>
+
+                    <div class="risk-item" onclick="toggleRisk('heart-failure', this)">
+                        <div class="checkbox-wrapper">
+                            <div class="custom-checkbox"></div>
+                            <span class="risk-label">심부전</span>
+                        </div>
+                        <input type="text" class="detail-input" placeholder="EF 값, NYHA class 입력" onclick="event.stopPropagation()">
+                    </div>
+
+                    <div class="risk-item" onclick="toggleRisk('hypertension', this)">
+                        <div class="checkbox-wrapper">
+                            <div class="custom-checkbox"></div>
+                            <span class="risk-label">고혈압</span>
+                        </div>
+                        <input type="text" class="detail-input" placeholder="혈압 수치, 복용 약물 입력" onclick="event.stopPropagation()">
+                    </div>
+
+                    <div class="risk-item" onclick="toggleRisk('old-age-cardio', this)">
+                        <div class="checkbox-wrapper">
+                            <div class="custom-checkbox"></div>
+                            <span class="risk-label">고령 (심혈관 위험)</span>
+                        </div>
+                        <input type="text" class="detail-input" placeholder="나이, functional activity 입력" onclick="event.stopPropagation()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 호흡기계 -->
+            <div class="subcategory-panel" id="respiratory-panel">
+                <div class="subcategory-title">🫁 호흡기계 위험 요소</div>
+                <div class="subcategory-grid">
+                    <div class="risk-item" onclick="toggleRisk('asthma', this)">
+                        <div class="checkbox-wrapper">
+                            <div class="custom-checkbox"></div>
+                            <span class="risk-label">천식</span>
+                        </div>
+                        <input type="text" class="detail-input" placeholder="마지막 발작 시기, 조절 상태 입력" onclick="event.stopPropagation()">
+                    </div>
+
+                    <div class="risk-item" onclick="toggleRisk('copd', this)">
+                        <div class="checkbox-wrapper">
+                            <div class="custom-checkbox"></div>
+                            <span class="risk-label">COPD</span>
+                        </div>
+                        <input type="text" class="detail-input" placeholder="중증도, PFT 결과 입력" onclick="event.stopPropagation()">
+                    </div>
+
+                    <div class="risk-item" onclick="toggleRisk('tuberculosis', this)">
+                        <div class="checkbox-wrapper">
+                            <div class="custom-checkbox"></div>
+                            <span class="risk-label">결핵</span>
+                        </div>
+                        <select class="detail-input" onclick="event.stopPropagation()">
+                            <option value="">상태 선택</option>
+                            <option value="active">활동성 결핵</option>
+                            <option value="suspected">결핵 의심</option>
+                            <option value="old">과거 결핵</option>
+                        </select>
+                    </div>
+
+                    <div class="risk-item" onclick="toggleRisk('sleep-apnea', this)">
+                        <div class="checkbox-wrapper">
+                            <div class="custom-checkbox"></div>
+                            <span class="risk-label">수면무호흡증</span>
+                        </div>
+                        <input type="text" class="detail-input" placeholder="AHI 지수, CPAP 사용 여부 입력" onclick="event.stopPropagation()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 나머지 패널들도 동일한 방식으로 계속... -->
+
+            <div class="risk-summary" id="riskSummary">
+                <div class="risk-level">위험도: <span id="riskLevel">중등도</span></div>
+                <div>선택된 위험 요소: <span id="selectedCount">0</span>개</div>
+                <button class="btn" onclick="generateConsentForm()">동의서 생성</button>
+            </div>
+
+            <div class="result-panel" id="resultPanel">
+                <h3>🏥 수술 전 위험도 평가 결과 및 동의서</h3>
+                <div class="consent-text" id="consentText"></div>
+                <button class="btn" onclick="copyToClipboard()">📋 클립보드 복사</button>
+                <button class="btn" onclick="printResult()">🖨️ 인쇄</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수와 함수들을 먼저 정의
+        var selectedRisks = new Set();
+        
+        var riskTemplates = {
+            'valve-disease': 'Peri-op cardiovascular cx.(malignant arrhythmia, Myocardial Infarction, Heart Failure, Sudden Cardiac Death 등) 발생 가능성 및 이로 인한 ICU/Ventilator care 가능성에 대해 인지동의서 시행하세요.',
+            'coronary-disease': 'peri-postop cardiovascular cx(MI, IHD, CHF, mailig. arrhythmia, sudden cardiac arrest) 발생가능성에 대해 인지동의서 시행하세요.',
+            'arrhythmia': 'Peri-op cardiovascular cx.(malignant arrhythmia, Myocardial Infarction, Heart Failure, Sudden Cardiac Death 등) 발생 가능성 및 이로 인한 ICU/Ventilator care 가능성에 대해 인지동의서 시행하세요.',
+            'heart-failure': 'Peri-op cardiovascular cx.(malignant arrhythmia, Myocardial Infarction, Heart Failure, Sudden Cardiac Death 등) 발생 가능성 및 이로 인한 ICU/Ventilator care 가능성에 대해 인지동의서 시행하세요.',
+            'hypertension': 'BP < 140/90으로 조절하세요. OR에서 BP 조절 안될시 수술지연가능성에 대해 설명하세요.',
+            'old-age-cardio': 'Old age로 인한 peri-op cardio-pulmonary complications 발생 가능성에 대해 인지동의서 시행하세요.',
+            'asthma': 'peri-postop respiratory cx.(asthma or COPD attack, atelectasis, pneumonia, pul.edema, respi. failure) 발생 가능성 및 이로 인한 ICU/ventilator care 가능성에 대해 인지동의서 시행하세요.',
+            'copd': 'peri-postop respiratory cx.(asthma or COPD attack, atelectasis, pneumonia, pul.edema, respi. failure) 발생 가능성 및 이로 인한 ICU/ventilator care 가능성에 대해 인지동의서 시행하세요.',
+            'tuberculosis': 'Peri-op respiratory cx.(atelectasis, pneumonia,pul.edema등) 발생 가능성 및 이로 인한 ICU/Ventilator care 가능성에 대해 인지동의서 시행하세요.',
+            'sleep-apnea': 'peri-postop respiratory cx.(asthma or COPD attack, atelectasis, pneumonia, pul.edema, respi. failure) 발생 가능성 및 이로 인한 ICU/ventilator care 가능성에 대해 인지동의서 시행하세요.'
+        };
+
+        function showCategory(category, element) {
+            console.log('카테고리 선택:', category);
+            
+            var cards = document.querySelectorAll('.category-card');
+            for (var i = 0; i < cards.length; i++) {
+                cards[i].classList.remove('active');
+            }
+            
+            var panels = document.querySelectorAll('.subcategory-panel');
+            for (var i = 0; i < panels.length; i++) {
+                panels[i].classList.remove('show');
+            }
+            
+            element.classList.add('active');
+            
+            var panel = document.getElementById(category + '-panel');
+            if (panel) {
+                panel.classList.add('show');
+            }
+        }
+
+        function toggleRisk(riskId, element) {
+            console.log('위험 요소 토글:', riskId);
+            
+            var checkbox = element.querySelector('.custom-checkbox');
+            var detailInput = element.querySelector('.detail-input');
+            
+            if (checkbox.classList.contains('checked')) {
+                checkbox.classList.remove('checked');
+                element.classList.remove('selected');
+                if (detailInput) {
+                    detailInput.classList.remove('show');
+                }
+                selectedRisks.delete(riskId);
+            } else {
+                checkbox.classList.add('checked');
+                element.classList.add('selected');
+                if (detailInput) {
+                    detailInput.classList.add('show');
+                }
+                selectedRisks.add(riskId);
+            }
+            
+            updateRiskSummary();
+        }
+
+        function updateRiskSummary() {
+            var summary = document.getElementById('riskSummary');
+            var count = document.getElementById('selectedCount');
+            var level = document.getElementById('riskLevel');
+            
+            var riskCount = selectedRisks.size;
+            count.textContent = riskCount;
+            
+            if (riskCount === 0) {
+                summary.classList.remove('show');
+            } else {
+                summary.classList.add('show');
+                
+                if (riskCount <= 2) {
+                    level.textContent = '저위험';
+                    summary.style.background = 'linear-gradient(135deg, #00b894, #00cec9)';
+                } else if (riskCount <= 5) {
+                    level.textContent = '중등도 위험';
+                    summary.style.background = 'linear-gradient(135deg, #fdcb6e, #e17055)';
+                } else {
+                    level.textContent = '고위험';
+                    summary.style.background = 'linear-gradient(135deg, #ff7675, #fd79a8)';
+                }
+            }
+        }
+
+        function searchRisks(searchTerm) {
+            var term = searchTerm.toLowerCase();
+            var items = document.querySelectorAll('.risk-item');
+            
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                var text = item.textContent.toLowerCase();
+                var panel = item.closest('.subcategory-panel');
+                
+                if (term === '' || text.includes(term)) {
+                    item.style.display = 'block';
+                    if (term !== '') {
+                        panel.classList.add('show');
+                    }
+                } else {
+                    item.style.display = 'none';
+                }
+            }
+            
+            if (term === '') {
+                var panels = document.querySelectorAll('.subcategory-panel');
+                for (var i = 0; i < panels.length; i++) {
+                    panels[i].classList.remove('show');
+                }
+                var cards = document.querySelectorAll('.category-card');
+                for (var i = 0; i < cards.length; i++) {
+                    cards[i].classList.remove('active');
+                }
+            }
+        }
+
+        function generateConsentForm() {
+            var content = '=== 수술 전 위험도 평가 결과 ===\n\n';
+            content += '평가일시: ' + new Date().toLocaleString('ko-KR') + '\n';
+            content += '선택된 위험 요소: ' + selectedRisks.size + '개\n';
+            var currentRiskLevel = document.getElementById('riskLevel').textContent;
+            content += '위험도: ' + currentRiskLevel + '\n\n';
+            content += '=== 위험 요소별 동의서 내용 ===\n\n';
+            
+            var index = 1;
+            selectedRisks.forEach(function(risk) {
+                var items = document.querySelectorAll('.risk-item');
+                for (var i = 0; i < items.length; i++) {
+                    var item = items[i];
+                    var onclick = item.getAttribute('onclick');
+                    if (onclick && onclick.includes(risk)) {
+                        var label = item.querySelector('.risk-label').textContent;
+                        var input = item.querySelector('.detail-input');
+                        
+                        content += index + '. ' + label + '\n';
+                        
+                        if (input && input.classList.contains('show') && input.value) {
+                            if (input.tagName === 'SELECT') {
+                                var option = input.options[input.selectedIndex];
+                                if (option.value) {
+                                    content += '   세부사항: ' + option.text + '\n';
+                                }
+                            } else {
+                                content += '   세부사항: ' + input.value + '\n';
+                            }
+                        }
+                        
+                        var template = riskTemplates[risk] || '해당 위험 요소에 대한 적절한 설명과 동의서를 준비하세요.';
+                        content += '   ' + template + '\n\n';
+                        
+                        index++;
+                        break;
+                    }
+                }
+            });
+            
+            if (currentRiskLevel === '중등도 위험' || currentRiskLevel === '고위험') {
+                content += '\n=== 추가 위험도 안내 ===\n\n';
+                content += '⚠️ 현재 환자의 위험도가 ' + currentRiskLevel + '로 평가되었습니다.\n\n';
+                content += '다음 사항에 대해 추가로 인지동의서를 받아주세요:\n\n';
+                content += '• 수술 및 마취 합병증 위험성이 일반 환자에 비해 높습니다.\n';
+                content += '• 수술 중 또는 수술 후 예상치 못한 합병증 발생 가능성이 증가합니다.\n';
+                content += '• 중환자실 치료나 인공호흡기 치료가 필요할 가능성이 높습니다.\n';
+                content += '• 수술 연기나 취소가 필요할 수 있으며, 응급상황 발생 시 즉각적인 처치가 시행될 수 있습니다.\n';
+                content += '• 회복 기간이 연장될 수 있으며, 추가적인 의료 처치가 필요할 수 있습니다.\n';
+                content += '• 위험 요소들로 인해 수술 성공률이 감소하고 합병증 발생률이 증가할 수 있습니다.\n\n';
+                content += '위 위험성에 대해 충분히 이해하였으며, 그럼에도 불구하고 수술을 진행하는 것에 동의합니다.\n\n';
+            }
+            
+            content += '\n=== 일반적인 수술 전 주의사항 ===\n\n';
+            content += '• 수술 전 금식 시간을 엄격히 준수하세요.\n';
+            content += '• 복용 중인 모든 약물에 대해 의료진과 상의하세요.\n';
+            content += '• 수술 당일 체온, 혈압, 맥박 등 활력징후를 확인합니다.\n';
+            content += '• 수술 중 예상치 못한 합병증 발생 시 응급처치가 시행될 수 있습니다.\n\n';
+            
+            content += '=== 환자/보호자 서명 ===\n\n';
+            content += '환자명: ________________    서명: ________________    날짜: ________________\n';
+            content += '보호자명: ______________    서명: ________________    날짜: ________________\n';
+            content += '의료진명: ______________    서명: ________________    날짜: ________________\n';
+            
+            if (currentRiskLevel === '중등도 위험' || currentRiskLevel === '고위험') {
+                content += '\n=== 고위험 수술 추가 동의 서명 ===\n\n';
+                content += '위 고위험 수술 관련 합병증 및 위험성에 대해 충분히 설명받고 이해하였습니다.\n\n';
+                content += '환자명: ________________    서명: ________________    날짜: ________________\n';
+                content += '보호자명: ______________    서명: ________________    날짜: ________________\n';
+                content += '설명의사명: ____________    서명: ________________    날짜: ________________\n';
+            }
+            
+            document.getElementById('consentText').textContent = content;
+            document.getElementById('resultPanel').classList.add('show');
+            document.getElementById('resultPanel').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function copyToClipboard() {
+            var text = document.getElementById('consentText').textContent;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(function() {
+                    alert('클립보드에 복사되었습니다.');
+                });
+            } else {
+                var textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('클립보드에 복사되었습니다.');
+            }
+        }
+
+        function printResult() {
+            var text = document.getElementById('consentText').textContent;
+            var win = window.open('', '_blank');
+            win.document.write('<html><head><title>수술 전 위험도 평가</title><style>body{font-family:monospace;margin:20px;line-height:1.6;}</style></head><body><pre>' + text + '</pre></body></html>');
+            win.document.close();
+            win.print();
+        }
+
+        function resetAll() {
+            console.log('전체 초기화');
+            
+            var checkboxes = document.querySelectorAll('.custom-checkbox');
+            for (var i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].classList.remove('checked');
+            }
+            
+            var items = document.querySelectorAll('.risk-item');
+            for (var i = 0; i < items.length; i++) {
+                items[i].classList.remove('selected');
+                var input = items[i].querySelector('.detail-input');
+                if (input) {
+                    input.classList.remove('show');
+                    input.value = '';
+                }
+            }
+            
+            var cards = document.querySelectorAll('.category-card');
+            for (var i = 0; i < cards.length; i++) {
+                cards[i].classList.remove('active');
+            }
+            
+            var panels = document.querySelectorAll('.subcategory-panel');
+            for (var i = 0; i < panels.length; i++) {
+                panels[i].classList.remove('show');
+            }
+            
+            var searchInput = document.querySelector('.search-input');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            
+            selectedRisks.clear();
+            updateRiskSummary();
+            
+            document.getElementById('resultPanel').classList.remove('show');
+        }
+    </script>
